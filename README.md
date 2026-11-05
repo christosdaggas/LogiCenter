@@ -1,12 +1,11 @@
 # Logi Center
 
+![Logi Center](docs/app.png)
+
 A modern, easy-to-use manager for Logitech devices, built with Rust and GTK4.
 
-**Made for Fedora with the GNOME desktop (tested on Fedora 44).**
+**Made for Fedora with the GNOME desktop**
 
-**Version 1.0.0**
-
-![Logi Center](docs/app.png)
 
 ## What you can do
 
@@ -34,7 +33,7 @@ Click **Save settings** to keep your confirmed camera configuration. It is store
 Download the latest RPM from [GitHub Releases](https://github.com/christosdaggas/Logi-Center/releases), then run:
 
 ```sh
-sudo dnf install ./logicenter-1.0.0-1.fc44.x86_64.rpm
+sudo dnf install ./logicenter-xxxx.x86_64.rpm
 ```
 
 Open **Logi Center** from the application menu. If a receiver is not detected, reconnect it after installation.

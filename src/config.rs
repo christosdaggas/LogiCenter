@@ -82,7 +82,7 @@ fn normalize(serial: &str) -> String {
 fn config_path() -> Option<PathBuf> {
     let base = match std::env::var_os("XDG_CONFIG_HOME") {
         Some(base) => PathBuf::from(base),
-        None => PathBuf::from(std::env::var_os("HOME")?).join(".config"),
+        None => PathBuf::from(std::env::var_os("HOME")?).join(".local/share/daggas"),
     };
 
     let current = base.join("logicenter").join("config.yaml");
@@ -91,9 +91,12 @@ fn config_path() -> Option<PathBuf> {
     }
 
     // Fall back to the configuration written by the legacy Python app so
-    // existing device settings keep working after the rename.
-    let legacy = base.join("solaar").join("config.yaml");
-    if legacy.is_file() {
+    // existing device settings keep working after the rename. Solaar keeps
+    // it in the desktop's configuration folder, not in Logi Center's own.
+    let legacy = crate::preferences::xdg_config_home()
+        .map(|home| home.join("solaar").join("config.yaml"))
+        .filter(|legacy| legacy.is_file());
+    if let Some(legacy) = legacy {
         debug!("using legacy device configuration at {}", legacy.display());
         return Some(legacy);
     }

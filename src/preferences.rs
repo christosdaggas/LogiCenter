@@ -67,15 +67,28 @@ pub struct Preferences {
     pub startup: StartupMode,
 }
 
+/// Where Logi Center keeps its own files: `$XDG_CONFIG_HOME`, else
+/// `~/.local/share/daggas`.
 pub fn config_home() -> Option<PathBuf> {
-    std::env::var_os("XDG_CONFIG_HOME")
+    home_or("XDG_CONFIG_HOME", ".local/share/daggas")
+}
+
+/// The desktop's configuration folder (`$XDG_CONFIG_HOME`, else `~/.config`).
+/// The session reads login entries from here and other applications keep
+/// their settings here, so neither follows Logi Center's own folder.
+pub fn xdg_config_home() -> Option<PathBuf> {
+    home_or("XDG_CONFIG_HOME", ".config")
+}
+
+fn home_or(variable: &str, fallback: &str) -> Option<PathBuf> {
+    std::env::var_os(variable)
         .map(PathBuf::from)
         .filter(|path| path.is_absolute())
         .or_else(|| {
             std::env::var_os("HOME")
                 .map(PathBuf::from)
                 .filter(|path| path.is_absolute())
-                .map(|home| home.join(".config"))
+                .map(|home| home.join(fallback))
         })
 }
 
@@ -99,17 +112,19 @@ impl Preferences {
 
     pub fn save(&self) -> Result<()> {
         let base = config_home().context("Could not find your configuration folder")?;
+        let autostart = xdg_config_home()
+            .context("Could not find your configuration folder")?
+            .join("autostart");
         self.save_to(
             &base,
+            &autostart,
             &std::env::current_exe().context("Could not locate Logi Center")?,
         )
     }
 
-    fn save_to(&self, base: &Path, executable: &Path) -> Result<()> {
+    fn save_to(&self, base: &Path, autostart_dir: &Path, executable: &Path) -> Result<()> {
         let path = base.join("logicenter/preferences.yaml");
-        let autostart = base
-            .join("autostart")
-            .join(format!("{}.desktop", crate::APPLICATION_ID));
+        let autostart = autostart_dir.join(format!("{}.desktop", crate::APPLICATION_ID));
         let previous = match fs::read(&autostart) {
             Ok(data) => Some(data),
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
@@ -224,7 +239,11 @@ mod tests {
             for startup in StartupMode::ALL {
                 let preferences = Preferences { language, startup };
                 preferences
-                    .save_to(&base, Path::new("/usr/bin/logicenter"))
+                    .save_to(
+                        &base,
+                        &base.join("autostart"),
+                        Path::new("/usr/bin/logicenter"),
+                    )
                     .unwrap();
                 assert_eq!(Preferences::load_from(&base), preferences);
                 assert_eq!(autostart.exists(), startup != StartupMode::Manual);
@@ -276,7 +295,11 @@ mod tests {
                 language: Language::Greek,
                 startup: StartupMode::Manual
             }
-            .save_to(&base, Path::new("/usr/bin/logicenter"))
+            .save_to(
+                &base,
+                &base.join("autostart"),
+                Path::new("/usr/bin/logicenter")
+            )
             .is_err()
         );
         assert_eq!(fs::read_to_string(&path).unwrap(), "original-login-entry");

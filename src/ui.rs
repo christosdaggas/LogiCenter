@@ -74,11 +74,11 @@ impl ThemePreference {
 }
 
 fn theme_path() -> Option<PathBuf> {
-    let base = match std::env::var_os("XDG_CONFIG_HOME") {
-        Some(base) => PathBuf::from(base),
-        None => PathBuf::from(std::env::var_os("HOME")?).join(".config"),
-    };
-    Some(base.join("logicenter").join("theme"))
+    Some(
+        crate::preferences::config_home()?
+            .join("logicenter")
+            .join("theme"),
+    )
 }
 
 struct PairingUi {
